@@ -2,14 +2,14 @@ import cv2
 import numpy as np
 from PyQt5 import QtGui  
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt
-from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QPushButton, QGridLayout, QSlider
+from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QPushButton, QGridLayout, QSlider, QAction, qApp, QMainWindow, QDialog
 from PyQt5.QtGui import QPixmap
 
 from CameraController import CameraController
 from VideoThread import VideoThread
 
 
-class App(QWidget):
+class App(QMainWindow):
   def __init__(self, ipAddress):
     super().__init__()
     self.setWindowTitle("PTZ Controller")
@@ -17,7 +17,10 @@ class App(QWidget):
     self.display_height = 800
     # create the label that holds the image
     self.image_label = QLabel(self)
+    self.image_label.setAlignment(Qt.AlignCenter)
     self.image_label.resize(self.disply_width, self.display_height)
+
+    self.setCentralWidget(self.image_label)
 
     # ipAddress = '192.168.1.13'
 
@@ -41,26 +44,43 @@ class App(QWidget):
                 ] 
               ]
     # create a vertical box layout and add the two labels
-    layout = QGridLayout()
-    layout.addWidget(self.image_label, 0, 0, 8, 10)
-    slider = QSlider(Qt.Vertical)
-    slider.setMinimum(0x555)
-    slider.setMaximum(0xFFF)
-    if cam != None:
-      slider.setValue(int(cam.zoom, 16))
-      slider.sliderReleased.connect(lambda : cam.setZoom(hex(slider.value())[2:].upper()))
+    # layout = QGridLayout()
+    # layout.addWidget(self.image_label, 0, 0, 8, 10)
+    # slider = QSlider(Qt.Vertical)
+    # slider.setMinimum(0x555)
+    # slider.setMaximum(0xFFF)
+    # if cam != None:
+    #   slider.setValue(int(cam.zoom, 16))
+    #   slider.sliderReleased.connect(lambda : cam.setZoom(hex(slider.value())[2:].upper()))
 
-    for row in buttons:
-      for column in row:
-        btn = column['widget']
-        btn.pressed.connect(column['func'])
-        # buttons.append(btn)
-        layout.addWidget(btn, buttons.index(row) + 11, row.index(column) + 4)
+    # for row in buttons:
+    #   for column in row:
+    #     btn = column['widget']
+    #     btn.pressed.connect(column['func'])
+    #     # buttons.append(btn)
+    #     layout.addWidget(btn, buttons.index(row) + 11, row.index(column) + 4)
 
-    layout.addWidget(slider, 9, 7, 12, 7)
+    # layout.addWidget(slider, 9, 7, 12, 7)          
+        
+    exitAction = QAction('&Exit', self)        
+    exitAction.setShortcut('Ctrl+Q')
+    exitAction.setStatusTip('Exit application')
+    exitAction.triggered.connect(qApp.quit)
+
+    openCamera = QAction('&Open Camera', self)
+    openCamera.setShortcut('Ctrl+O')
+    openCamera.setStatusTip('Open Network Camera')
+    openCamera.triggered.connect(self.openCameraModal)
+
+    self.statusBar()
+
+    menubar = self.menuBar()
+    fileMenu = menubar.addMenu('&File')
+    fileMenu.addAction(exitAction)
+    fileMenu.addAction(openCamera)
 
     # set the vbox layout as the widgets layout
-    self.setLayout(layout)
+    # self.setLayout(layout)
     
     # cv2.setMouseCallback('PTZ Controller', self.draw_circle) 
 
@@ -90,6 +110,10 @@ class App(QWidget):
     convert_to_Qt_format = QtGui.QImage(rgb_image.data, w, h, bytes_per_line, QtGui.QImage.Format_RGB888)
     p = convert_to_Qt_format.scaled(self.disply_width, self.display_height, Qt.KeepAspectRatio)
     return QPixmap.fromImage(p)
+
+  def openCameraModal(self):
+    self.cameraModal = QDialog(self)
+    self.cameraModal.exec_()
 
   def draw_circle(self, event,x,y,flags,param):  
     if event == cv2.EVENT_LBUTTONDBLCLK:  
