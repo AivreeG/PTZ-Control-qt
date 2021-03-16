@@ -98,7 +98,6 @@ class App(QMainWindow):
   @pyqtSlot(np.ndarray)
   def update_image(self, cv_img):
     """Updates the image_label with a new opencv image"""
-    # cv2.circle(cv_img,(200,200), 200, (0,255,0), -1)
     qt_img = self.convert_cv_qt(cv_img)
     self.image_label.setPixmap(qt_img)
   
@@ -113,7 +112,7 @@ class App(QMainWindow):
 
   def openCameraModal(self):
     self.cameraModal = QDialog(self)
-    self.cameraModal.exec_()
+    self.cameraModal.exec()
 
   def draw_circle(self, event,x,y,flags,param):  
     if event == cv2.EVENT_LBUTTONDBLCLK:  

@@ -1,7 +1,12 @@
+#!/usr/bin/python
+
 import sys
 from PyQt5.QtWidgets import QApplication
 
 from App import App
+
+__version__ = '0.1'
+__author__ = 'Aivree Gomez'
 		
 if __name__=="__main__":
   app = QApplication(sys.argv)
@@ -13,4 +18,4 @@ if __name__=="__main__":
     a.show()
   else:
     print("Usage: main.py [IP Address/Hostname]")
-  sys.exit(app.exec_())
+  sys.exit(app.exec())

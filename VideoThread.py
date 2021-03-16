@@ -3,9 +3,11 @@ import numpy as np
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt, QThread
 
 class VideoThread(QThread):
+  """Provides OpenCV video feed from IP camera based on CameraController object provided"""
   change_pixmap_signal = pyqtSignal(np.ndarray)
 
   def __init__(self, camera):
+    
     super().__init__()
     self._run_flag = True
     self.camera = camera
