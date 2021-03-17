@@ -25,19 +25,28 @@ class CameraController:
   }
   home = '80008000' 
 
-  def __init__(self, ipAddress):
+  def __init__(self, ipAddress=None):
+    self.connected = ipAddress and True or False
+
+    if self.connected:
+      self.connect(ipAddress)
+    
+  def connect(self, ipAddress):
     self.ipAddress = ipAddress
     self.position = self.getPosition()
     self.zoom = self.getZoom()
+  def isConnected(self):
+    return self.connected
     
-
   def sendCommand(self, command, data):
+    if not self.connected:
+      return 'NC'
     getVars = {'cmd': f'#{command}{data}', 'res': 1}
     url = f'http://{self.ipAddress}/cgi-bin/aw_ptz'
     full_url = url + '?' + urllib.parse.urlencode(getVars)
     with urllib.request.urlopen(full_url) as response:
       val = response.read().decode('utf-8')
-      # print(val)
+      print(val)
       return val
 
   def movePositionAbsolute(self, pan, tilt, speed=-1, table=-1):

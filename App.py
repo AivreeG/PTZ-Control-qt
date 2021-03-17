@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 from PyQt5 import QtGui  
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt
-from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QPushButton, QGridLayout, QSlider, QAction, qApp, QMainWindow, QDialog
+from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QPushButton, QGridLayout, QSlider, QAction, qApp, QMainWindow, QDialog, QCheckBox, QRadioButton
 from PyQt5.QtGui import QPixmap
 
 from CameraController import CameraController
@@ -15,53 +15,62 @@ class App(QMainWindow):
     self.setWindowTitle("PTZ Controller")
     self.disply_width = 800
     self.display_height = 800
+
+    self.content = QWidget(self)
+    self.layout = QVBoxLayout()
+
+    self.setCentralWidget(self.content)
+    self.content.setLayout(self.layout)
+
+    self.cam = CameraController(ipAddress)
+    
+    self.presetFunc = self.cam.recallPreset 
+
+
     # create the label that holds the image
     self.image_label = QLabel(self)
     self.image_label.setAlignment(Qt.AlignCenter)
     self.image_label.resize(self.disply_width, self.display_height)
 
-    self.setCentralWidget(self.image_label)
-
-    # ipAddress = '192.168.1.13'
-
-    cam = ipAddress and CameraController(ipAddress) or None
+    self.layout.addWidget(self.image_label)
 
     buttons = [ 
                 [
-                  {'widget': QPushButton('\\'), 'func': lambda : cam.movePositionRelative('8200', '7E00')}, 
-                  {'widget': QPushButton('/\\'), 'func': lambda : cam.movePositionRelative('8000', '7E00')}, 
-                  {'widget': QPushButton('/'), 'func': lambda : cam.movePositionRelative('7E00', '7E00')}
+                  {'widget': QPushButton('\\'), 'func': lambda : self.cam.movePositionRelative('8200', '7E00')}, 
+                  {'widget': QPushButton('/\\'), 'func': lambda : self.cam.movePositionRelative('8000', '7E00')}, 
+                  {'widget': QPushButton('/'), 'func': lambda : self.cam.movePositionRelative('7E00', '7E00')}
                 ], 
                 [
-                  {'widget': QPushButton('<-'), 'func': lambda : cam.movePositionRelative('8200', '8000')}, 
-                  {'widget': QPushButton('Home'), 'func': lambda : cam.movePositionAbsolute('8000', '8000')}, 
-                  {'widget': QPushButton('->'), 'func': lambda : cam.movePositionRelative('7E00', '8000')}
+                  {'widget': QPushButton('<-'), 'func': lambda : self.cam.movePositionRelative('8200', '8000')}, 
+                  {'widget': QPushButton('Home'), 'func': lambda : self.cam.movePositionAbsolute('8000', '8000')}, 
+                  {'widget': QPushButton('->'), 'func': lambda : self.cam.movePositionRelative('7E00', '8000')}
                 ], 
                 [
-                  {'widget': QPushButton('/'), 'func': lambda : cam.movePositionRelative('8200', '8200')},
-                  {'widget': QPushButton('\\/'), 'func': lambda : cam.movePositionRelative('8000', '8200')},
-                  {'widget': QPushButton('\\'), 'func': lambda : cam.movePositionRelative('7E00', '8200')}
+                  {'widget': QPushButton('/'), 'func': lambda : self.cam.movePositionRelative('8200', '8200')},
+                  {'widget': QPushButton('\\/'), 'func': lambda : self.cam.movePositionRelative('8000', '8200')},
+                  {'widget': QPushButton('\\'), 'func': lambda : self.cam.movePositionRelative('7E00', '8200')}
                 ] 
               ]
-    # create a vertical box layout and add the two labels
-    # layout = QGridLayout()
-    # layout.addWidget(self.image_label, 0, 0, 8, 10)
-    # slider = QSlider(Qt.Vertical)
-    # slider.setMinimum(0x555)
-    # slider.setMaximum(0xFFF)
-    # if cam != None:
-    #   slider.setValue(int(cam.zoom, 16))
-    #   slider.sliderReleased.connect(lambda : cam.setZoom(hex(slider.value())[2:].upper()))
+    presetButtons = [
+                      [
+                        {'widget': QPushButton('1'), 'func': lambda : self.cam.recallPreset('00')}, 
+                        {'widget': QPushButton('2'), 'func': lambda : self.cam.recallPreset('01')}, 
+                        {'widget': QPushButton('3'), 'func': lambda : self.cam.recallPreset('02')}
+                      ], 
+                      [
+                        {'widget': QPushButton('4'), 'func': lambda : self.cam.recallPreset('03')}, 
+                        {'widget': QPushButton('5'), 'func': lambda : self.cam.recallPreset('04')}, 
+                        {'widget': QPushButton('6'), 'func': lambda : self.cam.recallPreset('05')}
+                      ], 
+                      [
+                        {'widget': QPushButton('7'), 'func': lambda : self.cam.recallPreset('06')},
+                        {'widget': QPushButton('8'), 'func': lambda : self.cam.recallPreset('07')},
+                        {'widget': QPushButton('9'), 'func': lambda : self.cam.recallPreset('08')}
+                      ] 
+                    ]
+    
+    self.statusBar()
 
-    # for row in buttons:
-    #   for column in row:
-    #     btn = column['widget']
-    #     btn.pressed.connect(column['func'])
-    #     # buttons.append(btn)
-    #     layout.addWidget(btn, buttons.index(row) + 11, row.index(column) + 4)
-
-    # layout.addWidget(slider, 9, 7, 12, 7)          
-        
     exitAction = QAction('&Exit', self)        
     exitAction.setShortcut('Ctrl+Q')
     exitAction.setStatusTip('Exit application')
@@ -72,20 +81,47 @@ class App(QMainWindow):
     openCamera.setStatusTip('Open Network Camera')
     openCamera.triggered.connect(self.openCameraModal)
 
-    self.statusBar()
 
     menubar = self.menuBar()
     fileMenu = menubar.addMenu('&File')
     fileMenu.addAction(exitAction)
     fileMenu.addAction(openCamera)
 
-    # set the vbox layout as the widgets layout
-    # self.setLayout(layout)
+    buttonPanel = QGridLayout()
+
+    slider = QSlider(Qt.Vertical)
+    slider.setMinimum(0x555)
+    slider.setMaximum(0xFFF)
+
+    self.presetRadioButton = QRadioButton()
+
+    if self.cam.isConnected():
+      slider.setValue(int(self.cam.getZoom(), 16))
+      slider.sliderReleased.connect(lambda : self.cam.setZoom(hex(slider.value())[2:].upper()))
+
+    for row in presetButtons:
+      for column in row:
+        btn = column['widget']
+        btn.pressed.connect(column['func'])
+        # buttons.append(btn)
+        buttonPanel.addWidget(btn, presetButtons.index(row), row.index(column))
+
+    for row in buttons:
+      for column in row:
+        btn = column['widget']
+        btn.pressed.connect(column['func'])
+        # buttons.append(btn)
+        buttonPanel.addWidget(btn, buttons.index(row), row.index(column) + 4)
+
+    buttonPanel.addWidget(slider, 0, 7, 3, 7)
+
+    self.layout.addLayout(buttonPanel)
     
+
     # cv2.setMouseCallback('PTZ Controller', self.draw_circle) 
 
     # create the video capture thread
-    self.thread = VideoThread(cam)
+    self.thread = VideoThread(self.cam)
     # connect its signal to the update_image slot
     self.thread.change_pixmap_signal.connect(self.update_image)
     # start the thread
@@ -113,6 +149,10 @@ class App(QMainWindow):
   def openCameraModal(self):
     self.cameraModal = QDialog(self)
     self.cameraModal.exec()
+
+  def setPresetFunc(self, type):
+    funcs = {'recall': self.cam.recallPreset, 'save': self.cam.savePreset, 'delete': self.cam.deletePreset}
+    self.presetFunc = funcs[type]
 
   def draw_circle(self, event,x,y,flags,param):  
     if event == cv2.EVENT_LBUTTONDBLCLK:  

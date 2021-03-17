@@ -14,7 +14,7 @@ class VideoThread(QThread):
 
   def run(self):
     # capture from web cam
-    if self.camera == None:
+    if not self.camera.isConnected():
       no_cam_img = np.zeros((600,600,3), np.uint8) 
       cv2.putText(no_cam_img, 'No Camera Available', (150,300), cv2.FONT_HERSHEY_DUPLEX, 1, (255,255,255))
       self.change_pixmap_signal.emit(no_cam_img)
