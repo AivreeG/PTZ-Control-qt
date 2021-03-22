@@ -18,4 +18,6 @@ if __name__=="__main__":
     a.show()
   else:
     print("Usage: main.py [IP Address/Hostname]")
+    exit(1)
+
   sys.exit(app.exec())

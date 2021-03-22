@@ -36,36 +36,36 @@ class App(QMainWindow):
 
     buttons = [ 
                 [
-                  {'widget': QPushButton('\\'), 'func': lambda : self.cam.movePositionRelative('8200', '7E00')}, 
-                  {'widget': QPushButton('/\\'), 'func': lambda : self.cam.movePositionRelative('8000', '7E00')}, 
-                  {'widget': QPushButton('/'), 'func': lambda : self.cam.movePositionRelative('7E00', '7E00')}
+                  {'widget': QPushButton('\\'), 'pressFunc': lambda : self.cam.movePanTilt('20', '80'), 'releaseFunc': lambda : self.cam.stopPanTilt()}, 
+                  {'widget': QPushButton('/\\'), 'pressFunc': lambda : self.cam.moveTilt('80'), 'releaseFunc': lambda : self.cam.stopTilt()}, 
+                  {'widget': QPushButton('/'), 'pressFunc': lambda : self.cam.movePanTilt('80', '80'), 'releaseFunc': lambda : self.cam.stopPanTilt()}
                 ], 
                 [
-                  {'widget': QPushButton('<-'), 'func': lambda : self.cam.movePositionRelative('8200', '8000')}, 
-                  {'widget': QPushButton('Home'), 'func': lambda : self.cam.movePositionAbsolute('8000', '8000')}, 
-                  {'widget': QPushButton('->'), 'func': lambda : self.cam.movePositionRelative('7E00', '8000')}
+                  {'widget': QPushButton('<-'), 'pressFunc': lambda : self.cam.movePan('20'), 'releaseFunc': lambda : self.cam.stopPan()}, 
+                  {'widget': QPushButton('Home'), 'pressFunc': lambda : self.cam.movePositionAbsolute('8000', '8000'), 'releaseFunc': lambda : None}, 
+                  {'widget': QPushButton('->'), 'pressFunc': lambda : self.cam.movePan('80'), 'releaseFunc': lambda : self.cam.stopPan()}
                 ], 
                 [
-                  {'widget': QPushButton('/'), 'func': lambda : self.cam.movePositionRelative('8200', '8200')},
-                  {'widget': QPushButton('\\/'), 'func': lambda : self.cam.movePositionRelative('8000', '8200')},
-                  {'widget': QPushButton('\\'), 'func': lambda : self.cam.movePositionRelative('7E00', '8200')}
+                  {'widget': QPushButton('/'), 'pressFunc': lambda : self.cam.movePanTilt('20', '20'), 'releaseFunc': lambda : self.cam.stopPanTilt()},
+                  {'widget': QPushButton('\\/'), 'pressFunc': lambda : self.cam.moveTilt('20'), 'releaseFunc': lambda : self.cam.stopTilt()},
+                  {'widget': QPushButton('\\'), 'pressFunc': lambda : self.cam.movePanTilt('80', '20'), 'releaseFunc': lambda : self.cam.stopPanTilt()}
                 ] 
               ]
     presetButtons = [
                       [
-                        {'widget': QPushButton('1'), 'func': lambda : self.cam.recallPreset('00')}, 
-                        {'widget': QPushButton('2'), 'func': lambda : self.cam.recallPreset('01')}, 
-                        {'widget': QPushButton('3'), 'func': lambda : self.cam.recallPreset('02')}
+                        {'widget': QPushButton('1'), 'func': lambda : self.presetFunc(1)}, 
+                        {'widget': QPushButton('2'), 'func': lambda : self.presetFunc(2)}, 
+                        {'widget': QPushButton('3'), 'func': lambda : self.presetFunc(3)}
                       ], 
                       [
-                        {'widget': QPushButton('4'), 'func': lambda : self.cam.recallPreset('03')}, 
-                        {'widget': QPushButton('5'), 'func': lambda : self.cam.recallPreset('04')}, 
-                        {'widget': QPushButton('6'), 'func': lambda : self.cam.recallPreset('05')}
+                        {'widget': QPushButton('4'), 'func': lambda : self.presetFunc(4)}, 
+                        {'widget': QPushButton('5'), 'func': lambda : self.presetFunc(5)}, 
+                        {'widget': QPushButton('6'), 'func': lambda : self.presetFunc(6)}
                       ], 
                       [
-                        {'widget': QPushButton('7'), 'func': lambda : self.cam.recallPreset('06')},
-                        {'widget': QPushButton('8'), 'func': lambda : self.cam.recallPreset('07')},
-                        {'widget': QPushButton('9'), 'func': lambda : self.cam.recallPreset('08')}
+                        {'widget': QPushButton('7'), 'func': lambda : self.presetFunc(7)},
+                        {'widget': QPushButton('8'), 'func': lambda : self.presetFunc(8)},
+                        {'widget': QPushButton('9'), 'func': lambda : self.presetFunc(9)}
                       ] 
                     ]
     
@@ -93,8 +93,6 @@ class App(QMainWindow):
     slider.setMinimum(0x555)
     slider.setMaximum(0xFFF)
 
-    self.presetRadioButton = QRadioButton()
-
     if self.cam.isConnected():
       slider.setValue(int(self.cam.getZoom(), 16))
       slider.sliderReleased.connect(lambda : self.cam.setZoom(hex(slider.value())[2:].upper()))
@@ -106,17 +104,40 @@ class App(QMainWindow):
         # buttons.append(btn)
         buttonPanel.addWidget(btn, presetButtons.index(row), row.index(column))
 
+    recallPresetRadio = QRadioButton("Recall")
+    recallPresetRadio.setChecked(True)
+    recallPresetRadio.toggled.connect(lambda : self.setPresetFunc(recallPresetRadio.text()))
+    buttonPanel.addWidget(recallPresetRadio, 4, 0)
+
+    savePresetRadio = QRadioButton("Save") 
+    savePresetRadio.setChecked(False)
+    savePresetRadio.toggled.connect(lambda : self.setPresetFunc(savePresetRadio.text()))
+    buttonPanel.addWidget(savePresetRadio, 4, 1)
+
+    deletePresetRadio = QRadioButton("Delete") 
+    deletePresetRadio.setChecked(False)
+    deletePresetRadio.toggled.connect(lambda : self.setPresetFunc(deletePresetRadio.text()))
+    buttonPanel.addWidget(deletePresetRadio, 4, 2)
+    
+    # num = 1
+    # for x in range(3):
+    #   for y in range(3):
+    #     btn = QPushButton(str(num))
+    #     btn.pressed.connect(lambda : self.presetFunc(num)) #Returns last value only
+    #     buttonPanel.addWidget(btn, x, y)
+    #     num += 1
+
     for row in buttons:
       for column in row:
         btn = column['widget']
-        btn.pressed.connect(column['func'])
+        btn.pressed.connect(column['pressFunc'])
+        btn.released.connect(column['releaseFunc'])
         # buttons.append(btn)
         buttonPanel.addWidget(btn, buttons.index(row), row.index(column) + 4)
 
     buttonPanel.addWidget(slider, 0, 7, 3, 7)
 
     self.layout.addLayout(buttonPanel)
-    
 
     # cv2.setMouseCallback('PTZ Controller', self.draw_circle) 
 
@@ -152,7 +173,7 @@ class App(QMainWindow):
 
   def setPresetFunc(self, type):
     funcs = {'recall': self.cam.recallPreset, 'save': self.cam.savePreset, 'delete': self.cam.deletePreset}
-    self.presetFunc = funcs[type]
+    self.presetFunc = funcs[type.lower()]
 
   def draw_circle(self, event,x,y,flags,param):  
     if event == cv2.EVENT_LBUTTONDBLCLK:  
