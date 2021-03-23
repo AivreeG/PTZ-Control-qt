@@ -1,10 +1,11 @@
 import socket
 import sys
+import math
 import urllib.parse
 import urllib.request
 from PyQt5.QtCore import pyqtSignal, Qt, QThread
 
-class CameraController(Qthread):
+class CameraController(QThread):
   COMMANDS = {
       'preset': {
         'save': 'M',
@@ -30,6 +31,7 @@ class CameraController(Qthread):
       }
   }
   home = '80008000' 
+  positionUpperBound = 0xFFFF
 
   def __init__(self, ipAddress=None):
     super().__init__()
@@ -180,3 +182,11 @@ class CameraController(Qthread):
   
   def getVideo(self):
     return f'http://{self.ipAddress}/cgi-bin/mjpeg?resolution=640x360&framerate=30&quality=1'
+
+  @staticmethod
+  def degreesToHexString(degrees, inMax=360, outMax=0xFFFF):
+    return hex(math.floor(CameraController.mapRange(0, inMax, 0, outMax, degrees)))[2:].upper()
+
+  @staticmethod
+  def mapRange(inStart, inEnd, outStart, outEnd, val):
+    return outStart + ((outEnd - outStart) / (inEnd - inStart)) * (val - inStart)
