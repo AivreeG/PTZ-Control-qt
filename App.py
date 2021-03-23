@@ -2,7 +2,22 @@ import cv2
 import numpy as np
 from PyQt5 import QtGui  
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt
-from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QPushButton, QGridLayout, QSlider, QAction, qApp, QMainWindow, QDialog, QCheckBox, QRadioButton
+from PyQt5.QtWidgets import (
+  QWidget, 
+  QLabel, 
+  QVBoxLayout, 
+  QPushButton, 
+  QGridLayout, 
+  QSlider, 
+  QAction, 
+  qApp, 
+  QMainWindow, 
+  QDialog, 
+  QCheckBox, 
+  QRadioButton, 
+  QSpacerItem,
+  QSizePolicy
+)
 from PyQt5.QtGui import QPixmap
 
 from CameraController import CameraController
@@ -89,20 +104,36 @@ class App(QMainWindow):
 
     buttonPanel = QGridLayout()
 
-    slider = QSlider(Qt.Vertical)
-    slider.setMinimum(0x555)
-    slider.setMaximum(0xFFF)
+    self.zoomSlider = QSlider(Qt.Vertical)
+    self.zoomSlider.setMinimum(0x555)
+    self.zoomSlider.setMaximum(0xFFF)
+
+    buttonPanel.addWidget(self.zoomSlider, 0, 8, 3, 7) #, Qt.AlignHCenter)
+
+    speedSlider = QSlider(Qt.Vertical)
+    speedSlider.setMinimum(0)
+    speedSlider.setMaximum(49)
+
+    buttonPanel.addWidget(speedSlider, 0, 4, 3, 7) #, alignment=Qt.AlignHCenter)
+
+    zoomLabel = QLabel('Zoom')
+    buttonPanel.addWidget(zoomLabel, 5, 7)
+
+    speedLabel = QLabel('Speed')
+    buttonPanel.addWidget(speedLabel, 4, 4)
 
     if self.cam.isConnected():
-      slider.setValue(int(self.cam.getZoom(), 16))
-      slider.sliderReleased.connect(lambda : self.cam.setZoom(hex(slider.value())[2:].upper()))
+      zoomSlider.setValue(int(self.cam.getZoom(), 16))
+      zoomSlider.sliderReleased.connect(lambda : self.cam.setZoom(hex(zoomSlider.value())[2:].upper()))
+      speedSlider.setValue(self.cam.getSpeed())
+      speedSlider.sliderReleased.connect(lambda : self.cam.setSpeed(speedSlider.value())[2:])
 
     for row in presetButtons:
       for column in row:
         btn = column['widget']
         btn.pressed.connect(column['func'])
         # buttons.append(btn)
-        buttonPanel.addWidget(btn, presetButtons.index(row), row.index(column))
+        buttonPanel.addWidget(btn, presetButtons.index(row), row.index(column) )
 
     recallPresetRadio = QRadioButton("Recall")
     recallPresetRadio.setChecked(True)
@@ -133,9 +164,12 @@ class App(QMainWindow):
         btn.pressed.connect(column['pressFunc'])
         btn.released.connect(column['releaseFunc'])
         # buttons.append(btn)
-        buttonPanel.addWidget(btn, buttons.index(row), row.index(column) + 4)
+        buttonPanel.addWidget(btn, buttons.index(row), row.index(column) + 5)
 
-    buttonPanel.addWidget(slider, 0, 7, 3, 7)
+
+    # spacerItem = QSpacerItem(150, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+
+    # buttonPanel.addItem(spacerItem, 0,8)
 
     self.layout.addLayout(buttonPanel)
 
@@ -151,6 +185,11 @@ class App(QMainWindow):
   def closeEvent(self, event):
     self.thread.stop()
     event.accept()
+
+  @pyqtSlot(str)
+  def update_zoom(self, value):
+    # self.zoomSlider.setValue(int(value, 16))
+    print('Zoom Update: ' + value)
 
   @pyqtSlot(np.ndarray)
   def update_image(self, cv_img):
