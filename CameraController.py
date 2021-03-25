@@ -28,6 +28,10 @@ class CameraController(QThread):
         'set': 'AXZ',
         'get': 'GZ',
         'setSpeed': 'Z'
+      },
+      'tally': {
+        'inputEnableDisable': 'TAE',
+        'onOff': 'DA'
       }
   }
   home = '80008000' 
@@ -35,7 +39,13 @@ class CameraController(QThread):
 
   def __init__(self, ipAddress=None):
     super().__init__()
-    self.connected = ipAddress and True or False
+    self.ipAddress = ipAddress
+    self.position = None
+    self.zoom = None
+    self.speed = None
+
+    self.connected = self.connectNotify(ipAddress)
+
     self.zoom_signal = pyqtSignal(str)
     self._run_flag = False
 
@@ -70,11 +80,16 @@ class CameraController(QThread):
     #   print('Current Sessions: ' + numSessions)
 
     getVars = {'connect': 'start', 'my_port': server_address[1], 'uid': 0}
-    url = f'http://{self.ipAddress}/cgi-bin/event'
+    url = f'http://{ipAddress}/cgi-bin/event'
     full_url = url + '?' + urllib.parse.urlencode(getVars)
-    with urllib.request.urlopen(full_url) as response:
-      val = response.read().decode('utf-8')
-      print('Connect Notify: ' + val)
+    try:
+      with urllib.request.urlopen(full_url, timeout=2) as response:
+        val = response.read().decode('utf-8')
+        print('Connect Notify: ' + val)
+    except Exception: 
+        print('Camera not avaliable')
+        self.connected = False
+        return 
 
     print(sys.stderr, 'waiting for a connection')
     return sock.accept()
@@ -90,15 +105,20 @@ class CameraController(QThread):
     
   def sendCommand(self, command, data):
     if not self.connected:
-      print(f"#{command}{data}")
+      print(f"Dummy #{command}{data}")
       return 'NC'
     getVars = {'cmd': f"#{command}{data}", 'res': 1}
     url = f'http://{self.ipAddress}/cgi-bin/aw_ptz'
     full_url = url + '?' + urllib.parse.urlencode(getVars)
-    with urllib.request.urlopen(full_url) as response:
-      val = response.read().decode('utf-8')
-      print(getVars['cmd'] + ' : ' + val)
-      return val
+    try:
+      with urllib.request.urlopen(full_url, timeout=2) as response:
+        val = response.read().decode('utf-8')
+        print(getVars['cmd'] + ' : ' + val)
+        return val
+    except Exception: 
+        print('Camera not avaliable')
+        self.connected = False
+        return 
 
   def movePositionAbsolute(self, pan, tilt, speed=-1, table=-1):
     command = ''
@@ -190,3 +210,16 @@ class CameraController(QThread):
   @staticmethod
   def mapRange(inStart, inEnd, outStart, outEnd, val):
     return outStart + ((outEnd - outStart) / (inEnd - inStart)) * (val - inStart)
+
+  @staticmethod
+  def quickCommand(ipAddress, command, data):
+    getVars = {'cmd': f"#{command}{data}", 'res': 1}
+    url = f'http://{ipAddress}/cgi-bin/aw_ptz'
+    full_url = url + '?' + urllib.parse.urlencode(getVars)
+    try:
+      with urllib.request.urlopen(full_url, timeout=2) as response:
+        val = response.read().decode('utf-8')
+        print(getVars['cmd'] + ' : ' + val)
+        return val
+    except Exception: 
+        print('Camera not avaliable')

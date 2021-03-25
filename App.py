@@ -117,7 +117,7 @@ class App(QMainWindow):
     buttonPanel.addWidget(speedSlider, 0, 4, 3, 7) #, alignment=Qt.AlignHCenter)
 
     zoomLabel = QLabel('Zoom')
-    buttonPanel.addWidget(zoomLabel, 5, 7)
+    buttonPanel.addWidget(zoomLabel, 4, 8)
 
     speedLabel = QLabel('Speed')
     buttonPanel.addWidget(speedLabel, 4, 4)
