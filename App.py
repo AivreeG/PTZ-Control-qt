@@ -123,9 +123,9 @@ class App(QMainWindow):
     buttonPanel.addWidget(speedLabel, 4, 4)
 
     if self.cam.isConnected():
-      zoomSlider.setValue(int(self.cam.getZoom(), 16))
-      zoomSlider.sliderReleased.connect(lambda : self.cam.setZoom(hex(zoomSlider.value())[2:].upper()))
-      speedSlider.setValue(self.cam.getSpeed())
+      self.zoomSlider.setValue(int(self.cam.getZoom(), 16))
+      self.zoomSlider.sliderReleased.connect(lambda : self.cam.setZoom(hex(self.zoomSlider.value())[2:].upper()))
+      speedSlider.setValue(30)
       speedSlider.sliderReleased.connect(lambda : self.cam.setSpeed(speedSlider.value())[2:])
 
     for row in presetButtons:
@@ -181,6 +181,10 @@ class App(QMainWindow):
     self.thread.change_pixmap_signal.connect(self.update_image)
     # start the thread
     self.thread.start()
+
+    # self.cam.zoom_signal.connect(self.update_zoom)
+
+    self.cam.start()
 
   def closeEvent(self, event):
     self.thread.stop()

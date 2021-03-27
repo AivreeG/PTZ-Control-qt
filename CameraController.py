@@ -51,10 +51,11 @@ class CameraController(QThread):
 
     if self.connected:
       self.connect(ipAddress)
-      self.connection, self.client_ip = self.connectNotify(ipAddress)
-      if self.socket != None:
-        print(sys.stderr, 'client connected:', self.client_ip)
-        self._run_flag = True
+      self._run_flag = True
+
+    def __del__(self):
+      if self.socket:
+        self.socket.close()
     
   def connect(self, ipAddress):
     self.ipAddress = ipAddress
@@ -66,11 +67,16 @@ class CameraController(QThread):
     return self.connected
 
   def connectNotify(self, ipAddress):
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_address = ('0.0.0.0', 31004)
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.connect((ipAddress, 80))
+    host_ip = s.getsockname()[0]
+    s.close()
+
+    self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_address = (host_ip, 31004)
     print(sys.stderr, 'starting up on %s port %s' % server_address)
-    sock.bind(server_address)
-    sock.listen(1)
+    self.socket.bind(server_address)
+    self.socket.listen(1)
 
     # Probably don't need this
     # numSessions = 0
@@ -89,19 +95,28 @@ class CameraController(QThread):
     except Exception: 
         print('Camera not avaliable')
         self.connected = False
-        return 
+        self.socket.close()
+        return False
 
-    print(sys.stderr, 'waiting for a connection')
-    return sock.accept()
+    return True
 
   def run(self):
     try:
       while self._run_flag:
-        data = connection.recv(576)
-        self.zoom_signal.emit(data)
+        print('Connection loop!')
+        connection, client_address = self.socket.accept()
+        # print(connection.recvmsg(500))
+        reserve1 = connection.recv(2)
+        size = connection.recv(2)
+        reserve2 = connection.recv(4)
+        data = connection.recv(504)
+        reserve3 = connection.recv(24)
+        print(size.decode('utf-8'))
+        # self.zoom_signal.emit(data)
     finally:
         # Clean up the connection
-        self.connection.close()
+        print('I died')
+        connection.close()
     
   def sendCommand(self, command, data):
     if not self.connected:
@@ -163,7 +178,7 @@ class CameraController(QThread):
     return self.movePanTilt('50', '50')
 
   def getSpeed(self):
-    return self.sendCommand(CameraController.COMMANDS['move']['panTilt'], '')[2:]
+    return self.speed
 
   def getSpeed(self):
     return self.sendCommand(CameraController.COMMANDS['move']['panTilt'], '')[2:]
