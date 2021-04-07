@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import math
 from PyQt5 import QtGui  
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt
 from PyQt5.QtWidgets import (
@@ -51,19 +52,55 @@ class App(QMainWindow):
 
     buttons = [ 
                 [
-                  {'widget': QPushButton('\\'), 'pressFunc': lambda : self.cam.movePanTilt('20', '80'), 'releaseFunc': lambda : self.cam.stopPanTilt()}, 
-                  {'widget': QPushButton('/\\'), 'pressFunc': lambda : self.cam.moveTilt('80'), 'releaseFunc': lambda : self.cam.stopTilt()}, 
-                  {'widget': QPushButton('/'), 'pressFunc': lambda : self.cam.movePanTilt('80', '80'), 'releaseFunc': lambda : self.cam.stopPanTilt()}
+                  {
+                    'widget': QPushButton('\\'), 
+                    'pressFunc': lambda : self.cam.movePanTilt(f"{50 - self.sliderSpeedToMoveSpeed():02d}", f"{50 + self.sliderSpeedToMoveSpeed():02d}"),
+                    'releaseFunc': lambda : self.cam.stopPanTilt()
+                  }, 
+                  {
+                    'widget': QPushButton('/\\'), 
+                    'pressFunc': lambda : self.cam.moveTilt(f"{50 + self.sliderSpeedToMoveSpeed():02d}"),
+                    'releaseFunc': lambda : self.cam.stopTilt()
+                  }, 
+                  {
+                    'widget': QPushButton('/'), 
+                    'pressFunc': lambda : self.cam.movePanTilt(f"{50 + self.sliderSpeedToMoveSpeed():02d}", f"{50 + self.sliderSpeedToMoveSpeed():02d}"),
+                    'releaseFunc': lambda : self.cam.stopPanTilt()
+                  }
                 ], 
                 [
-                  {'widget': QPushButton('<-'), 'pressFunc': lambda : self.cam.movePan('20'), 'releaseFunc': lambda : self.cam.stopPan()}, 
-                  {'widget': QPushButton('Home'), 'pressFunc': lambda : self.cam.movePositionAbsolute('8000', '8000'), 'releaseFunc': lambda : None}, 
-                  {'widget': QPushButton('->'), 'pressFunc': lambda : self.cam.movePan('80'), 'releaseFunc': lambda : self.cam.stopPan()}
+                  {
+                    'widget': QPushButton('<-'), 
+                    'pressFunc': lambda : self.cam.movePan(f"{50 - self.sliderSpeedToMoveSpeed():02d}"),
+                    'releaseFunc': lambda : self.cam.stopPan()
+                  }, 
+                  {
+                    'widget': QPushButton('Home'), 
+                    'pressFunc': lambda : self.cam.movePositionAbsolute('8000', '8000'), 
+                    'releaseFunc': lambda : None
+                  }, 
+                  {
+                    'widget': QPushButton('->'), 
+                    'pressFunc': lambda : self.cam.movePan(str(50 + self.sliderSpeedToMoveSpeed())), 
+                    'releaseFunc': lambda : self.cam.stopPan()
+                  }
                 ], 
                 [
-                  {'widget': QPushButton('/'), 'pressFunc': lambda : self.cam.movePanTilt('20', '20'), 'releaseFunc': lambda : self.cam.stopPanTilt()},
-                  {'widget': QPushButton('\\/'), 'pressFunc': lambda : self.cam.moveTilt('20'), 'releaseFunc': lambda : self.cam.stopTilt()},
-                  {'widget': QPushButton('\\'), 'pressFunc': lambda : self.cam.movePanTilt('80', '20'), 'releaseFunc': lambda : self.cam.stopPanTilt()}
+                  {
+                    'widget': QPushButton('/'), 
+                    'pressFunc': lambda : self.cam.movePanTilt(f"{50 - self.sliderSpeedToMoveSpeed():02d}", f"{50 - self.sliderSpeedToMoveSpeed():02d}"),
+                    'releaseFunc': lambda : self.cam.stopPanTilt()
+                  },
+                  {
+                    'widget': QPushButton('\\/'), 
+                    'pressFunc': lambda : self.cam.moveTilt(f"{50 - self.sliderSpeedToMoveSpeed():02d}"),
+                    'releaseFunc': lambda : self.cam.stopTilt()
+                  },
+                  {
+                    'widget': QPushButton('\\'), 
+                    'pressFunc': lambda : self.cam.movePanTilt(f"{50 + self.sliderSpeedToMoveSpeed():02d}", f"{50 - self.sliderSpeedToMoveSpeed():02d}"),
+                    'releaseFunc': lambda : self.cam.stopPanTilt()
+                  }
                 ] 
               ]
     presetButtons = [
@@ -85,7 +122,6 @@ class App(QMainWindow):
                     ]
     
     self.statusBar()
-
     exitAction = QAction('&Exit', self)        
     exitAction.setShortcut('Ctrl+Q')
     exitAction.setStatusTip('Exit application')
@@ -111,8 +147,8 @@ class App(QMainWindow):
     buttonPanel.addWidget(self.zoomSlider, 0, 8, 3, 7) #, Qt.AlignHCenter)
 
     speedSlider = QSlider(Qt.Vertical)
-    speedSlider.setMinimum(0)
-    speedSlider.setMaximum(49)
+    speedSlider.setMinimum(250)
+    speedSlider.setMaximum(999)
 
     buttonPanel.addWidget(speedSlider, 0, 4, 3, 7) #, alignment=Qt.AlignHCenter)
 
@@ -125,8 +161,8 @@ class App(QMainWindow):
     if self.cam.isConnected():
       self.zoomSlider.setValue(int(self.cam.getZoom(), 16))
       self.zoomSlider.sliderReleased.connect(lambda : self.cam.setZoom(hex(self.zoomSlider.value())[2:].upper()))
-      speedSlider.setValue(30)
-      speedSlider.sliderReleased.connect(lambda : self.cam.setSpeed(speedSlider.value())[2:])
+      speedSlider.setValue(int(self.cam.getSpeed()))
+      speedSlider.sliderReleased.connect(lambda : self.cam.setSpeed(speedSlider.value()))
 
     for row in presetButtons:
       for column in row:
@@ -184,7 +220,7 @@ class App(QMainWindow):
 
     # self.cam.zoom_signal.connect(self.update_zoom)
 
-    self.cam.start()
+    # self.cam.start()
 
   def closeEvent(self, event):
     self.thread.stop()
@@ -193,6 +229,7 @@ class App(QMainWindow):
   @pyqtSlot(str)
   def update_zoom(self, value):
     # self.zoomSlider.setValue(int(value, 16))
+    self.statusTip("Test")
     print('Zoom Update: ' + value)
 
   @pyqtSlot(np.ndarray)
@@ -221,3 +258,6 @@ class App(QMainWindow):
   def draw_circle(self, event,x,y,flags,param):  
     if event == cv2.EVENT_LBUTTONDBLCLK:  
       cv2.circle(img,(x,y),50,(123,125, 200),-1)
+  
+  def sliderSpeedToMoveSpeed(self):
+    return math.floor(CameraController.mapRange(250, 999, 0, 48, int(self.cam.getSpeed())))

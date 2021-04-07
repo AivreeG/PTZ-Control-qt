@@ -3,7 +3,8 @@
 import sys
 from CameraController import CameraController
 
-IPs = ['10', '11', '12', '13']
+# IPs = ['10', '11', '12', '13']
+IPs = ['12', '13']
 
 
 if __name__ == '__main__':
@@ -12,6 +13,7 @@ if __name__ == '__main__':
     exit(1)
 
   ip = IPs[int(sys.argv[1])]
+  # camIP = '192.168.1.' + ip
   camIP = '192.168.0.' + ip
   
   options = False

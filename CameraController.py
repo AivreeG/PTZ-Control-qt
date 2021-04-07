@@ -12,6 +12,7 @@ class CameraController(QThread):
         'recall': 'R',
         'delete': 'C',
         'getLast': 'S',
+        'speed': 'UPVS'
       },
       'panTilt': {
         'moveAbsolute': 'APC',
@@ -44,7 +45,7 @@ class CameraController(QThread):
     self.zoom = None
     self.speed = None
 
-    self.connected = self.connectNotify(ipAddress)
+    self.connected = True #self.connectNotify(ipAddress)
 
     self.zoom_signal = pyqtSignal(str)
     self._run_flag = False
@@ -105,13 +106,13 @@ class CameraController(QThread):
       while self._run_flag:
         print('Connection loop!')
         connection, client_address = self.socket.accept()
-        # print(connection.recvmsg(500))
-        reserve1 = connection.recv(2)
+        # print(connection.recv(60))
+        connection.recv(22)
         size = connection.recv(2)
-        reserve2 = connection.recv(4)
-        data = connection.recv(504)
-        reserve3 = connection.recv(24)
-        print(size.decode('utf-8'))
+        connection.recv(4)
+        data = connection.recv(int(size.hex(), 16))
+        connection.recv(24)
+        print(data.decode())
         # self.zoom_signal.emit(data)
     finally:
         # Clean up the connection
@@ -177,11 +178,11 @@ class CameraController(QThread):
   def stopPanTilt(self):
     return self.movePanTilt('50', '50')
 
-  def getSpeed(self):
-    return self.speed
+  def setSpeed(self, speed):
+    return self.sendCommand(CameraController.COMMANDS['preset']['speed'], speed) 
 
   def getSpeed(self):
-    return self.sendCommand(CameraController.COMMANDS['move']['panTilt'], '')[2:]
+    return self.sendCommand(CameraController.COMMANDS['preset']['speed'], '')[4:]
 
   def movementSpeed(self, speed):
     return self.sendCommand(CameraController.COMMANDS['panTilt']['speed'], speed)
